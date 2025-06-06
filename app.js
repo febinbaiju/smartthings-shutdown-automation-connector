@@ -164,7 +164,7 @@ async function callSmartThingsApi(
   }
 }
 
-async function handleShutdown(deviceId, authToken) {
+async function handleShutdown() {
   exec("sudo shutdown -h now", (error, stdout, stderr) => {
     if (error) {
       console.error(`Shutdown error: ${error.message}`);
@@ -229,7 +229,7 @@ app.post("/", async (req, resp) => {
         if (event.subscriptionName === "switch_on_subscription") {
           console.log("shutdown command received!");
           await turnOffSwitch(deviceId, authToken); // Turns off the Virtual Switch if the Event Capture was Successful
-          await handleShutdown(event.deviceId, authToken); // Shuts down the system
+          await handleShutdown(); // Shuts down the system
         }
         break;
       }

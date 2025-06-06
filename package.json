@@ -1,0 +1,17 @@
+{
+  "name": "smartthings-shutdown-connector",
+  "version": "1.0.0",
+  "description": "SmartThings SmartApp - Automation Connector to control a virtual switch and trigger system shutdown.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.5.0",
+    "express": "^4.18.2",
+    "request": "^2.88.2"
+  },
+  "author": "Febin Baiju",
+  "license": "MIT"
+}

@@ -94,8 +94,6 @@ Then, install your SmartApp on Samsung SmartThings Developer Workspace:
 
 ---
 
----
-
 ## 👨‍💻 Author
 
 **Febin Baiju**

@@ -1,0 +1,1 @@
+# smartthings-shutdown-automation-connector

@@ -2,7 +2,7 @@ services:
   smartthings-shutdown-automation-connector:
     build: .
     ports:
-      - "5166:3000"
+      - "5166:5166"
     environment:
       APP_NAME: "Raspberry Pi Shutdown"
       APP_DESCRIPTION: "SmartThings SmartApp to remotely shut down your Raspberry Pi"

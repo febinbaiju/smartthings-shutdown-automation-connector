@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const { exec } = require("child_process");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5166;
 const baseUrl = "https://api.smartthings.com";
 
 app.use(bodyParser.json());

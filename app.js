@@ -165,7 +165,7 @@ async function callSmartThingsApi(
 }
 
 async function handleShutdown() {
-  exec("sudo shutdown -h now", (error, stdout, stderr) => {
+  exec("shutdown -h now", (error, stdout, stderr) => {
     if (error) {
       console.error(`Shutdown error: ${error.message}`);
     }
@@ -194,7 +194,7 @@ app.post("/", async (req, resp) => {
         return resp.json({
           statusCode: 200,
           message: "Configured",
-          data: config,
+          configurationData: config,
         });
       }
       case "CONFIRMATION": {
@@ -214,18 +214,27 @@ app.post("/", async (req, resp) => {
           evt.installData.installedApp,
           evt.installData.authToken
         );
-        return resp.json({ statusCode: 200, message: "Installed" });
+        return resp.json({
+          statusCode: 200,
+          message: "Installed",
+          installData: {},
+        });
       }
       case "UPDATE": {
         await handleUpdate(
           evt.updateData.installedApp,
           evt.updateData.authToken
         );
-        return resp.json({ statusCode: 200, message: "Updated" });
+        return resp.json({
+          statusCode: 200,
+          message: "Updated",
+          updateData: {},
+        });
       }
       case "EVENT": {
         const event = evt.eventData.events[0].deviceEvent;
         const authToken = evt.eventData.authToken;
+        const deviceId = event.deviceId;
         if (event.subscriptionName === "switch_on_subscription") {
           console.log("shutdown command received!");
           await turnOffSwitch(deviceId, authToken); // Turns off the Virtual Switch if the Event Capture was Successful

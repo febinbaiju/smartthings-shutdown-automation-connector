@@ -1,0 +1,11 @@
+[Unit]
+Description=Host Shutdown Script
+After=network.target
+
+[Service]
+WorkingDirectory=/bin
+ExecStart=/usr/bin/python3 shutdown.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

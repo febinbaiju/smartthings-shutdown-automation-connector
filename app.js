@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const os = require("os");
 const bodyParser = require("body-parser");
 const { exec } = require("child_process");
 
@@ -164,16 +165,75 @@ async function callSmartThingsApi(
   }
 }
 
+function shutdownMessage(waitSeconds = 30) {
+  const interfaces = os.networkInterfaces();
+
+  let ip = "Unknown IP";
+  for (const iface of Object.values(interfaces)) {
+    for (const details of iface) {
+      if (details.family === "IPv4" && !details.internal) {
+        ip = details.address;
+        break;
+      }
+    }
+    if (ip !== "Unknown IP") break;
+  }
+
+  const device = os.hostname();
+
+  const now = new Date();
+  const time = now.toISOString().replace("T", " ").split(".")[0];
+
+  return `<b>⚠️ Shutdown Initiated</b>
+
+🖥️ <b>Device:</b> <code>${device}</code>  
+🌐 <b>IP Address:</b> <code>${ip}</code>  
+🕒 <b>Time:</b> <code>${time}</code>
+
+🔌 The system is powering down safely.  
+⏱️ Please wait approximately <b>${waitSeconds} seconds</b> for shutdown to complete.`;
+}
+
+const notifyToTelegram = async (message) => {
+  if (!process.env.TELEGRAM_NOTIFICATION_SERVER) {
+    return;
+  }
+  try {
+    const res = await fetch(process.env.TELEGRAM_NOTIFICATION_SERVER, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message }),
+    });
+    const text = await res.text();
+    console.log("Telegram response:", text);
+  } catch (err) {
+    console.error("Telegram notify error:", err);
+  }
+};
+
 async function handleShutdown() {
-  exec("shutdown -h now", (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Shutdown error: ${error.message}`);
+  if (process.env.SHUTDOWN_HOST_URL) {
+    try {
+      console.log(`Calling shutdown host URL: ${process.env.SHUTDOWN_HOST_URL}`);
+      const res = await fetch(process.env.SHUTDOWN_HOST_URL);
+      const text = await res.text();
+      console.log("Shutdown host response:", text);
+    } catch (err) {
+      console.error("Error calling shutdown host:", err);
     }
-    if (stderr) {
-      console.error(`Shutdown stderr: ${stderr}`);
-    }
-    console.log(`Shutdown stdout: ${stdout}`);
-  });
+  } else {
+    exec("shutdown -h now", (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Shutdown error: ${error.message}`);
+      }
+      if (stderr) {
+        console.error(`Shutdown stderr: ${stderr}`);
+      }
+      console.log(`Shutdown stdout: ${stdout}`);
+    });
+  }
 }
 
 // Routes
@@ -237,6 +297,9 @@ app.post("/", async (req, resp) => {
         const deviceId = event.deviceId;
         if (event.subscriptionName === "switch_on_subscription") {
           console.log("shutdown command received!");
+          if (process.env.TELEGRAM_NOTIFICATION_SERVER) {
+            await notifyToTelegram(shutdownMessage());
+          }
           await turnOffSwitch(deviceId, authToken); // Turns off the Virtual Switch if the Event Capture was Successful
           await handleShutdown(); // Shuts down the system
         }

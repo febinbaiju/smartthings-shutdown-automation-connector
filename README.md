@@ -9,6 +9,8 @@ A Node.js-based SmartApp that integrates with Samsung SmartThings and allows you
 * Subscribes to `switch.on` events to trigger shutdown.
 * Automatically deletes/re-creates subscriptions on update.
 * Turns off the switch after triggering shutdown.
+* **Optional Telegram Notifications**: Sends detailed system shutdown status notifications to Telegram.
+* **Optional Remote Shutdown Web Hook**: Triggers host system shutdown by calling a custom host web service (useful when running the SmartApp inside a Docker container).
 
 ---
 
@@ -26,6 +28,9 @@ A Node.js-based SmartApp that integrates with Samsung SmartThings and allows you
 smartthings-shutdown-connector/
 ├── app.js           # Main application logic
 ├── .env             # Environment variable configuration
+├── host-shutdown/   # Scripts to set up host-side shutdown service
+│   ├── shutdown.py  # Python HTTP server to execute host shutdown
+│   └── shutdown.service # Systemd service unit file
 ├── package.json     # Project dependencies and scripts
 └── README.md        # You're reading it!
 ```
@@ -47,14 +52,16 @@ cp .env.example .env
 # Edit .env and add required values
 ```
 
-### Example `.env`
+### Environment Variables
 
-```ini
-PORT=5165
-APP_NAME=SmartThings Shutdown
-APP_DESCRIPTION=Trigger system shutdown from SmartThings
-APP_ID=your-app-id
-```
+| Variable | Description | Required | Example |
+|---|---|---|---|
+| `PORT` | Local port for the Node.js server. | No (Defaults to `5166`) | `5166` |
+| `APP_NAME` | SmartThings app name. | Yes | `SmartThings Shutdown` |
+| `APP_DESCRIPTION` | SmartThings app description. | Yes | `Trigger system shutdown from SmartThings` |
+| `APP_ID` | SmartThings App ID. | Yes | `your-app-id` |
+| `SHUTDOWN_HOST_URL` | Endpoint of the host shutdown service. If not specified, the app executes `shutdown -h now` locally. | No | `http://192.168.1.6:9999` |
+| `TELEGRAM_NOTIFICATION_SERVER` | Telegram bot/notification server URL. If set, sends notifications to this URL. | No | `http://192.168.1.6:5387?token=secret` |
 
 ---
 
@@ -76,6 +83,31 @@ Then, install your SmartApp on Samsung SmartThings Developer Workspace:
 
 ---
 
+## 🔌 Host Shutdown Service Setup
+
+When running this connector inside a Docker container, it cannot easily shut down the host OS directly. Use the provided Python service in `host-shutdown/` to run a helper service on the host:
+
+1. Copy `host-shutdown/shutdown.py` to `/bin/shutdown.py` on the host:
+   ```bash
+   sudo cp host-shutdown/shutdown.py /bin/shutdown.py
+   sudo chmod 644 /bin/shutdown.py
+   ```
+2. Copy `host-shutdown/shutdown.service` to `/etc/systemd/system/shutdown.service` on the host:
+   ```bash
+   sudo cp host-shutdown/shutdown.service /etc/systemd/system/shutdown.service
+   sudo chmod 644 /etc/systemd/system/shutdown.service
+   ```
+3. Enable and start the systemd service:
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable shutdown
+   sudo systemctl start shutdown
+   ```
+
+Specify the URL (e.g., `http://localhost:9999`) in the `SHUTDOWN_HOST_URL` environment variable of the Docker container.
+
+---
+
 ## ⚙️ Lifecycle Events Supported
 
 * `CONFIGURATION`
@@ -88,8 +120,8 @@ Then, install your SmartApp on Samsung SmartThings Developer Workspace:
 
 ## ⚠️ Important Notes
 
-* Your server needs `sudo` permission to run `shutdown`.
-* It’s recommended to configure your system to allow passwordless shutdown for your service user.
+* Without `SHUTDOWN_HOST_URL`, your server running the Node.js app needs `sudo` permission to run `shutdown`.
+* It’s recommended to configure your system to allow passwordless shutdown for your service user if executing locally.
 * The virtual switch will be turned off automatically after triggering.
 
 ---
